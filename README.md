@@ -1,86 +1,63 @@
-from __future__ import annotations
+# Yerel AI oyun kanalı içerik otomasyonu
 
-from typing import Any, Dict, List
+Oyun adı ve birkaç tercih vererek **yerel Ollama modeliyle** video planı, Türkçe seslendirme taslağı ve YouTube metadata'sı hazırlayın. Üretilen her paket otomatik olarak yeni bir klasöre kaydedilir. Gemini/API anahtarı gerekmez; Ollama erişilemiyorsa uygulama bunu belirtip çevrimdışı şablonla devam eder.
 
-from content_automation import generate_content_plan
+> Bu araç içerik paketi hazırlar; oyun görüntüsü kaydetmez, videoyu render etmez ve YouTube'a yüklemez. Oynanış görüntülerinizi ve kişisel deneyiminizi scriptteki ilgili yerlere ekleyin.
 
+## Gereksinimler
 
-def build_script_lines(game_name: str, platform: str, tone: str, style: str, duration_minutes: int) -> List[str]:
-    intro = (
-        f"Merhaba arkadaşlar! Bugün {game_name} oyununu {platform} üzerinde "
-        f"{style} ve {tone} bir bakış açısıyla ele alıyoruz."
-    )
-    segments = [
-        "İlk olarak oyunun genel hissini konuşalım. Görsel tasarım, menü akışı ve ilk dakikalardaki izlenim çok önemli.",
-        "Sonra kontrol sistemini ve oynanış akışını inceleyelim. Bu oyun gerçekten oyuncuyu sürece bağlayabiliyor mu?",
-        "Ardından oyunun güçlü ve zayıf yönlerini konuşacağız. İster eğlence odaklı bir izleyici olun, ister detaycı bir oyuncu; herkes için net bir fikir oluşturacağız.",
-        "Devamında en çok dikkat çeken anları ve en çok öne çıkan mekanikleri konuşacağız. Bunlar oyunun neden izlenmeye değer olduğunu belirleyen noktalar.",
-        "Son olarak da sonuç çıkaracağız: Eğer bu oyunu alırdınız? Hangi tür oyuncular için daha uygun?",
-    ]
-    closing = (
-        f"Kısacası, {game_name} oyununu {platform} üzerinde oynarken ne hissettiniz? Yorumlarda "
-        "düşüncelerinizi yazın, bir sonraki videoda başka bir oyunu birlikte inceleyelim!"
-    )
-    return [intro, *segments, closing]
+- Python 3.10 veya üzeri
+- [Ollama](https://ollama.com/download) (gerçek yerel AI üretimi için)
+- Model için yeterli disk/RAM; ilk model indirmesi internet bağlantısı gerektirir. Sonraki üretimler yerel çalışır.
 
+## Tek seferlik kurulum
 
-def build_youtube_metadata(game_name: str, platform: str, style: str, duration_minutes: int) -> Dict[str, Any]:
-    title = f"{game_name} {platform} İncelemesi | {duration_minutes} Dakika {style} Oynanış"
-    description = (
-        f"{game_name} oyununun {platform} sürümünü deneyimledik. "
-        f"Oynanış, grafikler, hikâye, zorluk seviyeleri ve genel öneri hakkındaki düşüncelerimizi paylaşıyoruz. "
-        f"Bu video {style} bir anlatımla hazırlanmıştır."
-    )
-    tags = [
-        game_name,
-        platform,
-        "oyun incelemesi",
-        style,
-        "youtube oyun videosu",
-        "oyun analizi",
-        "pc oyun",
-    ]
-    return {
-        "title": title,
-        "description": description,
-        "tags": tags,
-    }
+Proje klasöründe terminal açın:
 
+```bash
+python -m venv .venv
+# Windows PowerShell:
+.venv\\Scripts\\Activate.ps1
+# macOS/Linux için bunun yerine: source .venv/bin/activate
+python -m pip install -r requirements.txt
+ollama pull qwen2.5:7b
+```
 
-def generate_workflow_output(
-    game_name: str,
-    platform: str,
-    style: str,
-    tone: str,
-    duration_minutes: int,
-    api_key: str | None = None,
-) -> Dict[str, Any]:
-    plan = generate_content_plan(
-        game_name=game_name,
-        platform=platform,
-        style=style,
-        tone=tone,
-        duration_minutes=duration_minutes,
-        api_key=api_key,
-    )
+Ollama masaüstü uygulamasını açık tutun. Gerekirse ayrı terminalde `ollama serve` çalıştırın. `.env.example` dosyasını `.env` olarak kopyalamak zorunlu değildir; varsayılan ayarlar Ollama'yı `http://localhost:11434` ve `qwen2.5:7b` üzerinde arar. Ayar değiştirmek için `.env.example` dosyasını `.env` olarak kopyalayıp `OLLAMA_MODEL`, `OLLAMA_BASE_URL` veya `USE_LOCAL_LLM` değerlerini düzenleyin.
 
-    script_lines = build_script_lines(game_name, platform, tone, style, duration_minutes)
-    meta = build_youtube_metadata(game_name, platform, style, duration_minutes)
+Daha düşük donanım için Ollama'da mevcut daha küçük bir model kullanın, örneğin `ollama pull qwen2.5:3b`, ardından `.env` içinde `OLLAMA_MODEL=qwen2.5:3b` ayarlayın.
 
-    script_text = "\n\n".join(f"{idx}. {line}" for idx, line in enumerate(script_lines, start=1))
-    youtube_meta_text = (
-        f"Title: {meta['title']}\n\n"
-        f"Description:\n{meta['description']}\n\n"
-        f"Tags: {', '.join(meta['tags'])}"
-    )
+## Her video için tek komut
 
-    return {
-        "plan": plan,
-        "script_lines": script_lines,
-        "script_text": script_text,
-        "youtube_meta": meta,
-        "youtube_meta_text": youtube_meta_text,
-    }
+```bash
+python video_workflow.py --game "Elden Ring" --platform "PC" --style "analitik" --tone "samimi ve heyecanlı" --duration 10
+```
 
+Her çalıştırmada `output/elden-ring-YYYYMMDD-HHMMSS/` benzeri yeni bir klasör oluşur:
 
-__all__ = ["build_script_lines", "build_youtube_metadata", "generate_workflow_output"]
+- `plan.json` — makine tarafından okunabilir plan ve üretim kaynağı
+- `summary.md` — plan, akış, görüntü planı ve script
+- `script.txt` — seslendirme/video scripti
+- `youtube_meta.txt` — başlık, açıklama, etiketler ve hashtagler
+- `youtube_meta.json` — metadata'nın JSON biçimi
+
+Örnekler:
+
+```bash
+python video_workflow.py --game "CS2" --platform "PC" --duration 8
+python video_workflow.py --game "Zelda" --platform "Switch" --mode script
+python app.py --game "Stardew Valley" --style "sakin" --json
+python video_workflow.py --game "Fortnite" --no-save
+```
+
+`--mode` terminalde hangi çıktının gösterileceğini belirler; varsayılan `all`'dır. Dosyalar varsayılan olarak her modda kaydedilir. `--output-dir taslaklar` kayıt konumunu değiştirir. `--no-save` yalnızca terminal çıktısı verir.
+
+## Tamamen şablonla çalışma
+
+Ollama kullanmadan çevrimdışı şablon üretmek için `.env` ayarına `USE_LOCAL_LLM=false` ekleyin. Ollama açıksa varsayılan olarak yerel model kullanılır; bağlantı/model hatasında uygulama uyarı verir ve şablonla içerik paketini yine de kaydeder. Bulut API'ye otomatik fallback yapılmaz.
+
+## Testler
+
+```bash
+python -m pytest -q
+```
