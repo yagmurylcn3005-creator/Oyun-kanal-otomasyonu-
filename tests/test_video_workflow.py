@@ -1,40 +1,34 @@
-# Oyun-kanal-otomasyonu-
-YouTube oyun kanalı için yapay zeka içerik otomasyonu.
+import json
 
-## Hızlı Başlangıç
+from services.content_pipeline import build_local_plan
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-# .env dosyasına Google API anahtarınızı ekleyin
-python app.py --game "CS2" --platform "PC" --duration 8
-```
 
-## Özellikler
+def test_build_local_plan_has_expected_fields():
+    plan = build_local_plan(
+        game_name="Helldivers 2",
+        platform="PC",
+        style="eğlenceli ve hızlı",
+        tone="heyecanlı",
+        duration_minutes=8,
+    )
 
-- Oyun başlığı ve platform bazlı içerik planı üretir
-- Video açılış cümlesi, özet, akış ve CTA hazırlar
-- Google Gemini API key mevcutsa canlı içerik planı denemesi yapar
-- API key yoksa yerel akıllı fallback çalışır
-- Artık video scripti ve YouTube meta bilgileri üretebilir
+    assert plan["title"]
+    assert plan["hook"]
+    assert plan["outline"]
+    assert plan["shot_list"]
+    assert plan["cta"]
+    assert plan["seo_tags"][0] == "Helldivers 2"
+    assert "thumbnail_prompt" in plan
 
-## Yeni kullanım örnekleri
 
-```bash
-python app.py --game "Helldivers 2" --platform "PC" --style "eğlenceli ve hızlı" --tone "heyecanlı" --mode plan
-python app.py --game "Zelda" --platform "Switch" --mode script
-python app.py --game "Elden Ring" --platform "PC" --mode meta --output json
-python app.py --game "Stardew Valley" --platform "PC" --mode all
-```
+def test_build_local_plan_is_json_serializable():
+    plan = build_local_plan(
+        game_name="Stardew Valley",
+        platform="PC",
+        style="sakin ve keyifli",
+        tone="samimi",
+        duration_minutes=6,
+    )
 
-## Geliştirme aşaması
-
-Projede şu alanlar genişletilebilir:
-
-- oyun verilerinin otomatik çekilmesi
-- konu başlığı ve thumbnail önerileri
-- video seslendirme scripti üretimi
-- otomatik YouTube açıklaması + hashtag üretimi
-- web arayüzü (Streamlit / Flask)
+    serialized = json.dumps(plan, ensure_ascii=False)
+    assert "Stardew Valley" in serialized

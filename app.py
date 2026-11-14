@@ -1,87 +1,31 @@
-#!/usr/bin/env python3
+from __future__ import annotations
 
-import argparse
 import json
-import os
-import sys
-
-from dotenv import load_dotenv
-
-from content_automation import generate_content_plan, render_markdown
-from video_workflow import build_output, generate_workflow_output
+import re
+from typing import Any, Dict
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="YouTube oyun kanalı için yapay zeka içerik otomasyonu."
-    )
-    parser.add_argument("--game", required=True, help="Oyun adı, örn. CS2, Zelda, Fortnite")
-    parser.add_argument("--platform", default="PC", help="Platform, örn. PC, PS5, Xbox")
-    parser.add_argument(
-        "--style",
-        default="eğlenceli ve hızlı",
-        help="İçerik tonu / video stili",
-    )
-    parser.add_argument(
-        "--tone",
-        default="heyecanlı",
-        help="Ses tonu, örn. eğlenceli, analitik, merak uyandırıcı",
-    )
-    parser.add_argument(
-        "--duration",
-        type=int,
-        default=8,
-        help="Video süresi (dakika)",
-    )
-    parser.add_argument(
-        "--output",
-        choices=["text", "json"],
-        default="text",
-        help="Çıktı formatı",
-    )
-    parser.add_argument(
-        "--mode",
-        choices=["plan", "script", "meta", "all"],
-        default="plan",
-        help="Üretilecek içerik tipi",
-    )
-    return parser.parse_args()
+def _extract_json_text(text: str) -> Dict[str, Any]:
+    if not text:
+        raise ValueError("Boş model yanıtı.")
+
+    match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
+    if match:
+        text = match.group(1)
+
+    return json.loads(text)
 
 
-def main() -> int:
-    load_dotenv()
-    args = parse_args()
-
-    api_key = os.getenv("GOOGLE_API_KEY")
-
-    if args.output == "json":
-        workflow = generate_workflow_output(
-            game_name=args.game,
-            platform=args.platform,
-            style=args.style,
-            tone=args.tone,
-            duration_minutes=args.duration,
-            api_key=api_key,
-        )
-        print(json.dumps(workflow, ensure_ascii=False, indent=2))
-        return 0
-
-    output = build_output(
-        mode=args.mode,
-        game=args.game,
-        platform=args.platform,
-        style=args.style,
-        tone=args.tone,
-        duration=args.duration,
-        api_key=api_key,
-    )
-    print(output)
-    return 0
-
-
-if __name__ == "__main__":
+def generate_structured_response(prompt: str, api_key: str) -> Dict[str, Any]:
     try:
-        raise SystemExit(main())
-    except KeyboardInterrupt:
-        print("\nİşlem kullanıcı tarafından iptal edildi.", file=sys.stderr)
-        raise SystemExit(130)
+        from google import genai
+
+        client = genai.Client(api_key=api_key)
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt,
+        )
+        raw_text = getattr(response, "text", None) or str(response)
+        return _extract_json_text(raw_text)
+    except Exception as exc:  # pragma: no cover - exercised in runtime fallback
+        raise RuntimeError(f"Gemini çağrısı başarısız: {exc}") from exc

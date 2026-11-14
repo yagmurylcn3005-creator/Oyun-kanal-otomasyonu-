@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+from typing import Any, Dict, List
+
+from dotenv import load_dotenv
+
+from config import DEFAULT_DURATION, DEFAULT_PLATFORM, DEFAULT_STYLE, DEFAULT_TONE
+from services.content_pipeline import build_output, build_script_lines, build_thumbnail_prompt, build_youtube_metadata, generate_content_plan, generate_workflow_output, render_markdown
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="YouTube oyun kanalı için yapay zeka içerik otomasyonu."
+    )
+    parser.add_argument("--game", required=True, help="Oyun adı, örn. CS2, Zelda, Fortnite")
+    parser.add_argument("--platform", default=DEFAULT_PLATFORM, help="Platform, örn. PC, PS5, Xbox")
+    parser.add_argument(
+        "--style",
+        default=DEFAULT_STYLE,
+        help="İçerik tonu / video stili",
+    )
+    parser.add_argument(
+        "--tone",
+        default=DEFAULT_TONE,
+        help="Ses tonu, örn. eğlenceli, analitik, merak uyandırıcı",
+    )
+    parser.add_argument(
+        "--duration",
+        type=int,
+        default=DEFAULT_DURATION,
+        help="Video süresi (dakika)",
+    )
+    parser.add_argument(
+        "--output",
+        choices=["text", "json"],
+        default="text",
+        help="Çıktı formatı",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["plan", "script", "meta", "thumbnail", "all"],
+        default="all",
+        help="Üretilecek içerik tipi",
+    )
+    return parser.parse_args()
+
+
+def main() -> int:
+    load_dotenv()
+    args = parse_args()
+
+    api_key = os.getenv("GOOGLE_API_KEY")
+    output = build_output(
+        mode=args.mode,
+        game=args.game,
+        platform=args.platform,
+        style=args.style,
+        tone=args.tone,
+        duration=args.duration,
+        api_key=api_key,
+    )
+
+    if args.output == "json":
+        workflow = generate_workflow_output(
+            game_name=args.game,
+            platform=args.platform,
+            style=args.style,
+            tone=args.tone,
+            duration_minutes=args.duration,
+            api_key=api_key,
+        )
+        print(json.dumps(workflow, ensure_ascii=False, indent=2))
+        return 0
+
+    print(output)
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except KeyboardInterrupt:
+        print("\nİşlem kullanıcı tarafından iptal edildi.", file=sys.stderr)
+        raise SystemExit(130)
+
+
+__all__ = [
+    "build_script_lines",
+    "build_youtube_metadata",
+    "generate_workflow_output",
+    "build_output",
+    "render_markdown",
+    "generate_content_plan",
+    "build_thumbnail_prompt",
+]

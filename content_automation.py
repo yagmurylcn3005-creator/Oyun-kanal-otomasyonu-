@@ -1,148 +1,34 @@
-import json
-import re
-from typing import Any, Dict
+from services.content_pipeline import build_output, generate_workflow_output
 
 
-def build_local_plan(
-    game_name: str,
-    platform: str,
-    style: str,
-    tone: str,
-    duration_minutes: int,
-) -> Dict[str, Any]:
-    title = f"{game_name} {platform} ile {duration_minutes} dakikalık {style} incelemesi"
-    hook = (
-        f"Bugün {game_name} oyununu {platform} üzerinde inceleyeceğiz; "
-        "görünüşe göre herkesin konuştuğu bu oyun gerçekten beklediği kadar iyi mi?"
+def test_generate_workflow_output_returns_expected_sections():
+    workflow = generate_workflow_output(
+        game_name="Elden Ring",
+        platform="PC",
+        style="analitik",
+        tone="derin",
+        duration_minutes=10,
+        api_key=None,
     )
 
-    outline = [
-        "Oyun fikri ve görsel estetiği",
-        "İlk izlenim ve kontrol deneyimi",
-        "Oyuncu ilerleyişi ve içerik derinliği",
-        "Görsel ve ses kalitesi",
-        "Sonuç: İzlenmeye değer mi?",
-    ]
-
-    shot_list = [
-        "Açılış sahnesi ve kısa açıklama",
-        "Oyun menüsü ve genel görünüm",
-        "Ana oynanışın ilk dakikaları",
-        "Öne çıkan mekanikler ve zorluklar",
-        "Son karar ve öneri",
-    ]
-
-    return {
-        "title": title,
-        "hook": hook,
-        "platform": platform,
-        "style": style,
-        "tone": tone,
-        "duration_minutes": duration_minutes,
-        "summary": (
-            f"{game_name} için {style} bir içerik üretimi planı. "
-            "İzleyicinin dikkatini çekmek için güçlü bir açılış, kısa hikâye akışı, "
-            "oyunun güçlü yönlerini vurgulayan sahneler ve net bir sonuç sunulur."
-        ),
-        "outline": outline,
-        "shot_list": shot_list,
-        "cta": "Bu videoyu beğendiyseniz yorumlarda hangi oyunu bir sonraki videoda görmek istediğinizi yazın!",
-        "seo_tags": [game_name, platform, style, "oyun incelemesi", "youtube oyun videosu"],
-    }
+    assert "plan" in workflow
+    assert "script_lines" in workflow
+    assert "script_text" in workflow
+    assert "youtube_meta" in workflow
+    assert "thumbnail_prompt" in workflow
+    assert workflow["youtube_meta"]["title"]
 
 
-def _extract_json_payload(text: str) -> Dict[str, Any]:
-    if not text:
-        raise ValueError("Boş model yanıtı.")
+def test_build_output_supports_thumbnail_mode():
+    output = build_output(
+        mode="thumbnail",
+        game="Fortnite",
+        platform="PS5",
+        style="hızlı ve enerjik",
+        tone="heyecanlı",
+        duration=7,
+        api_key=None,
+    )
 
-    match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
-    if match:
-        text = match.group(1)
-
-    return json.loads(text)
-
-
-def generate_content_plan(
-    game_name: str,
-    platform: str,
-    style: str,
-    tone: str,
-    duration_minutes: int,
-    api_key: str | None = None,
-) -> Dict[str, Any]:
-    plan = build_local_plan(game_name, platform, style, tone, duration_minutes)
-
-    if not api_key:
-        return plan
-
-    try:
-        from google import genai
-
-        client = genai.Client(api_key=api_key)
-        prompt = f"""
-        Aşağıdaki bilgileri kullanarak YouTube oyun videosu için kısa ama profesyonel bir içerik planı üret.
-        Output sadece JSON olmalı. Format:
-        {{
-          "title": "...",
-          "hook": "...",
-          "summary": "...",
-          "outline": ["...","..."],
-          "shot_list": ["...","..."],
-          "cta": "...",
-          "seo_tags": ["...","..."]
-        }}
-
-        Oyun: {game_name}
-        Platform: {platform}
-        Stil: {style}
-        Ton: {tone}
-        Video süresi: {duration_minutes} dakika
-        """
-
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=prompt,
-        )
-        raw_text = getattr(response, "text", None) or str(response)
-        payload = _extract_json_payload(raw_text)
-
-        if not isinstance(payload, dict):
-            raise ValueError("Model JSON olarak değil, farklı format döndürdü.")
-
-        payload.setdefault("platform", platform)
-        payload.setdefault("style", style)
-        payload.setdefault("tone", tone)
-        payload.setdefault("duration_minutes", duration_minutes)
-        return payload
-    except Exception:
-        return plan
-
-
-def render_markdown(plan: Dict[str, Any]) -> str:
-    outline = "\n".join(f"{index}. {item}" for index, item in enumerate(plan.get("outline", []), start=1))
-    shot_list = "\n".join(f"- {item}" for item in plan.get("shot_list", []))
-    seo_tags = ", ".join(plan.get("seo_tags", []))
-
-    return f"""# {plan.get('title', 'Oyun İçerik Planı')}
-
-## Açılış cümlesi
-{plan.get('hook', 'Oyun hakkında güçlü bir giriş hazırlıyoruz.')}
-
-## Özet
-{plan.get('summary', 'Bu video için net bir hikâye akışı oluşturuluyor.')}
-
-## Video akışı
-{outline}
-
-## Görüntü planı
-{shot_list}
-
-## CTA
-{plan.get('cta', 'Abone olun ve sonraki videoda devam edelim.')}
-
-## SEO etiketleri
-{seo_tags}
-"""
-
-
-__all__ = ["build_local_plan", "generate_content_plan", "render_markdown"]
+    assert "Fortnite" in output
+    assert "thumbnail" in output.lower()

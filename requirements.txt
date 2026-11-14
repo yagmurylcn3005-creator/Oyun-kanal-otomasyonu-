@@ -1,3 +1,90 @@
-google-genai
-python-dotenv
-pytest
+# Oyun Kanal Otomasyonu
+
+YouTube oyun kanalı için yapay zeka destekli içerik üretimi yapan bir Python tabanlı otomasyon aracıdır. Oyun adı, platform, stil ve ton bilgileriyle içerik planı, video scripti, YouTube meta verileri ve thumbnail fikirleri üretebilir.
+
+## Özellikler
+
+- Oyun bazlı içerik planı üretir
+- Video scripti hazırlar
+- YouTube başlık, açıklama ve etiketleri oluşturur
+- Thumbnail için prompt üretir
+- Google Gemini API anahtarı varsa AI destekli plan oluşturur
+- API anahtarı yoksa yerel fallback plan üretir
+- CLI ve JSON çıktısı destekler
+- Geliştirilebilir modüler yapı sunar
+
+## Kurulum
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+```
+
+`.env` dosyasına Google API anahtarınızı ekleyin:
+
+```dotenv
+GOOGLE_API_KEY=your_google_api_key_here
+```
+
+## Kullanım
+
+```bash
+python app.py --game "CS2" --platform "PC" --style "eğlenceli ve hızlı" --tone "heyecanlı" --duration 8 --mode all
+```
+
+### Modlar
+
+- `plan`: içerik planı
+- `script`: video scripti
+- `meta`: YouTube meta bilgileri
+- `thumbnail`: thumbnail promptu
+- `all`: tüm çıktıları tek bir akışta üretir
+
+### JSON çıktısı
+
+```bash
+python app.py --game "Helldivers 2" --output json
+```
+
+### Dosyaya kaydetme
+
+```bash
+python app.py --game "Zelda" --mode all --save output/zelda.txt
+```
+
+## Proje yapısı
+
+```text
+.
+├── app.py
+├── config.py
+├── models.py
+├── README.md
+├── requirements.txt
+├── .env.example
+├── services/
+│   ├── __init__.py
+│   ├── ai_client.py
+│   └── content_pipeline.py
+├── tests/
+│   ├── test_content_automation.py
+│   └── test_video_workflow.py
+└── output/
+```
+
+## Geliştirme notları
+
+Bu repo şu alanlarda kolayca genişletilebilir:
+
+- oyun bilgisi çekme
+- thumbnail üretimi
+- video düzenleme için shot listleri
+- otomatik yayın açıklama üretimi
+- web arayüzü (Streamlit / FastAPI)
+- kanal verileri, içerik takvimi ve SEO optimizasyonu
+
+## Lisans
+
+Bu proje eğitim ve kişisel kullanım amaçlıdır.
