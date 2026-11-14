@@ -1,0 +1,36 @@
+{
+  "title": "Minecraft'ta İlk Gece: Yeni Başlayanlar İçin Sakin Bir Başlangıç",
+  "hook": "Yeni bir Minecraft dünyasında ilk gece yaklaşırken en önemli şey her şeyi yapmak değil, doğru birkaç şeyi zamanında yapmak. Gelin ilk günümüzü paniklemeden planlayalım.",
+  "summary": "Minecraft'ta yeni başlayanlar için ilk günü planlama, temel kaynakları toplama ve gece öncesi güvenli bir alan hazırlama üzerine kendi oynanış görüntüleriyle tamamlanacak 6-8 dakikalık rehber taslağı.",
+  "outline": [
+    "00:00–00:20 — Hızlı açılış ve videonun vaadi",
+    "00:20–01:00 — Yeni dünyayı gözlemleme ve hedef belirleme",
+    "01:00–02:15 — Temel kaynakları toplama",
+    "02:15–03:30 — Kullanılan sürümde doğrulanmış başlangıç araçları ve hazırlık",
+    "03:30–05:00 — Basit ve güvenli gece planı",
+    "05:00–06:30 — Kendi kaydından gece görüntüleri ve gerçek deneyim",
+    "06:30–07:00 — Özet ve izleyiciye soru"
+  ],
+  "shot_list": [
+    "Kendi oyun kaydından gün batımı ve kısa açılış görüntüsü",
+    "Dünya başlangıcı ve çevreyi gözlemleme",
+    "Gerçek kaynak toplama görüntüleri",
+    "Oyun içindeki tarifleri ve hazırlık adımlarını gösteren kayıt",
+    "Kendi geçici sığınağının yapım görüntüsü",
+    "Gerçek gece kaydı ve yaşanan olaylar",
+    "Kapanış ekranı ve sonraki video çağrısı"
+  ],
+  "script": "Taslak metin examples/ornek-video/script.txt dosyasındadır. Köşeli parantezli yerler kendi oyun kaydı ve deneyimiyle doldurulmalıdır.",
+  "cta": "Siz yeni dünyaya başladığınızda ilk olarak ne yapıyorsunuz? Yorumlarda paylaşın.",
+  "seo_tags": ["Minecraft", "Minecraft başlangıç rehberi", "Minecraft ilk gece", "Minecraft Türkçe", "başlangıç rehberi", "oyun rehberi"],
+  "platform": "PC (örnek; gerçek kayıt platformuna göre güncelleyin)",
+  "style": "sakin, samimi ve yeni başlayanlara uygun",
+  "tone": "yardımcı ve heyecanlı",
+  "duration_minutes": 7,
+  "generation": {
+    "provider": "example-draft",
+    "model": null,
+    "published": false,
+    "note": "Örnek içerik taslağıdır; hiçbir yere paylaşılmamış veya yüklenmemiştir."
+  }
+}
