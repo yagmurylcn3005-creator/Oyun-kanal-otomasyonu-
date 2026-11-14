@@ -1,60 +1,59 @@
 # Yerel AI oyun kanalı içerik otomasyonu
 
-Oyun adı ve birkaç tercih vererek **yerel Ollama modeliyle** video planı, Türkçe seslendirme taslağı ve YouTube metadata'sı hazırlayın. Üretilen her paket otomatik olarak yeni bir klasöre kaydedilir. Gemini/API anahtarı gerekmez; Ollama erişilemiyorsa uygulama bunu belirtip çevrimdışı şablonla devam eder.
+Uygulama artık soru sormadan kendi konu havuzundan sıradaki oyunu seçebilir, yerel Ollama modeliyle Türkçe içerik paketi üretir ve dosyalara kaydeder. Ollama kullanılamazsa hata verip durmak yerine offline şablona geçer. Bulut API veya Gemini anahtarı kullanılmaz.
 
-> Bu araç içerik paketi hazırlar; oyun görüntüsü kaydetmez, videoyu render etmez ve YouTube'a yüklemez. Oynanış görüntülerinizi ve kişisel deneyiminizi scriptteki ilgili yerlere ekleyin.
+> Otomasyon içerik taslağı üretir. Oyun görüntüsü kaydetme, gerçek oynanışı doğrulama, ses üretme, video render etme ve YouTube'a yükleme yapmaz. Bunlar mevcut projede bağlı olmayan sistemlerdir; yanlış/deneyimlenmemiş oyun iddialarını yayınlamamak için üretilen içerik taslak olarak kalır.
 
-## Gereksinimler
+## İlk kurulum
 
-- Python 3.10 veya üzeri
-- [Ollama](https://ollama.com/download) (gerçek yerel AI üretimi için)
-- Model için yeterli disk/RAM; ilk model indirmesi internet bağlantısı gerektirir. Sonraki üretimler yerel çalışır.
-
-## Tek seferlik kurulum
-
-Proje klasöründe terminal açın:
+Python 3.10+ ve [Ollama](https://ollama.com/download) kurun. İlk model indirmesi internet gerektirir; sonrasındaki model çağrıları yerel çalışır.
 
 ```bash
 python -m venv .venv
-# Windows PowerShell:
-.venv\\Scripts\\Activate.ps1
-# macOS/Linux için bunun yerine: source .venv/bin/activate
+# Windows PowerShell: .venv\\Scripts\\Activate.ps1
+# macOS/Linux: source .venv/bin/activate
 python -m pip install -r requirements.txt
 ollama pull qwen2.5:7b
 ```
 
-Ollama masaüstü uygulamasını açık tutun. Gerekirse ayrı terminalde `ollama serve` çalıştırın. `.env.example` dosyasını `.env` olarak kopyalamak zorunlu değildir; varsayılan ayarlar Ollama'yı `http://localhost:11434` ve `qwen2.5:7b` üzerinde arar. Ayar değiştirmek için `.env.example` dosyasını `.env` olarak kopyalayıp `OLLAMA_MODEL`, `OLLAMA_BASE_URL` veya `USE_LOCAL_LLM` değerlerini düzenleyin.
+Ollama'yı açık tutun (`ollama serve` gerekebilir). Varsayılanlar `http://localhost:11434` ve `qwen2.5:7b`; `.env.example` dosyasını `.env` olarak kopyalamak zorunlu değildir.
 
-Daha düşük donanım için Ollama'da mevcut daha küçük bir model kullanın, örneğin `ollama pull qwen2.5:3b`, ardından `.env` içinde `OLLAMA_MODEL=qwen2.5:3b` ayarlayın.
+## Soru sormadan otomatik üretim
 
-## Her video için tek komut
-
-```bash
-python video_workflow.py --game "Elden Ring" --platform "PC" --style "analitik" --tone "samimi ve heyecanlı" --duration 10
-```
-
-Her çalıştırmada `output/elden-ring-YYYYMMDD-HHMMSS/` benzeri yeni bir klasör oluşur:
-
-- `plan.json` — makine tarafından okunabilir plan ve üretim kaynağı
-- `summary.md` — plan, akış, görüntü planı ve script
-- `script.txt` — seslendirme/video scripti
-- `youtube_meta.txt` — başlık, açıklama, etiketler ve hashtagler
-- `youtube_meta.json` — metadata'nın JSON biçimi
-
-Örnekler:
+Proje klasöründe şu komut varsayılan konu listesinden daha önce en uzun süredir üretilmeyen oyunu seçer, içerik paketini oluşturur ve `output/` altına kaydeder:
 
 ```bash
-python video_workflow.py --game "CS2" --platform "PC" --duration 8
-python video_workflow.py --game "Zelda" --platform "Switch" --mode script
-python app.py --game "Stardew Valley" --style "sakin" --json
-python video_workflow.py --game "Fortnite" --no-save
+python video_workflow.py
 ```
 
-`--mode` terminalde hangi çıktının gösterileceğini belirler; varsayılan `all`'dır. Dosyalar varsayılan olarak her modda kaydedilir. `--output-dir taslaklar` kayıt konumunu değiştirir. `--no-save` yalnızca terminal çıktısı verir.
+Otonom biçimde her 24 saatte bir yeni paket oluşturup devam etmesi için:
 
-## Tamamen şablonla çalışma
+```bash
+python video_workflow.py --watch
+```
 
-Ollama kullanmadan çevrimdışı şablon üretmek için `.env` ayarına `USE_LOCAL_LLM=false` ekleyin. Ollama açıksa varsayılan olarak yerel model kullanılır; bağlantı/model hatasında uygulama uyarı verir ve şablonla içerik paketini yine de kaydeder. Bulut API'ye otomatik fallback yapılmaz.
+Durdurmak için `Ctrl+C`. Aralık ve konu havuzu özelleştirilebilir:
+
+```bash
+python video_workflow.py --watch --interval-hours 12
+```
+
+`autopilot_topics.json` dosyasın�� düzenleyerek oyunları, platformları, stilleri, tonları ve süreleri kendi kanalınıza göre belirleyin. Sıra bilgisi `output/.autopilot_state.json` içinde tutulur; bu dosyayı silerseniz konu rotasyonu baştan başlar. Hatalı veya eksik konu dosyası uygulamayı durdurmaz, yerleşik varsayılan listeyi kullanır.
+
+Her üretim kendi klasörüne şunları kaydeder:
+
+- `plan.json` — plan ve üretim kaynağı
+- `summary.md` — içerik özeti, akış ve görüntü önerileri
+- `script.txt` — seslendirme taslağı
+- `youtube_meta.txt` ve `youtube_meta.json` — başlık, açıklama, etiketler ve hashtagler
+
+Elle oyun seçimi de kullanılabilir:
+
+```bash
+python video_workflow.py --game "Elden Ring" --platform "PC" --duration 10
+```
+
+Otomasyon internette trend araştırması yapmaz; oyunları yerel listedeki dönüş sırasına göre seçer. Gerçek oynanış görüntüsü, kişisel deneyim ve güncel bilgiler üretici tarafından eklenip kontrol edilmelidir. Sistem otomatik olarak hiçbir şeyi YouTube'a yüklemez veya yayımlamaz.
 
 ## Testler
 

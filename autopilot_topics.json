@@ -1,0 +1,12 @@
+{
+  "topics": [
+    {"game": "Minecraft", "platform": "PC", "style": "yaratıcı ve eğlenceli", "tone": "samimi", "duration": 8},
+    {"game": "Stardew Valley", "platform": "PC", "style": "sakin ve keyifli", "tone": "samimi", "duration": 8},
+    {"game": "Counter-Strike 2", "platform": "PC", "style": "hızlı ve analitik", "tone": "heyecanlı", "duration": 8},
+    {"game": "Fortnite", "platform": "PC", "style": "eğlenceli ve hızlı", "tone": "enerjik", "duration": 8},
+    {"game": "The Witcher 3", "platform": "PC", "style": "hikâye odaklı", "tone": "sürükleyici", "duration": 10},
+    {"game": "Elden Ring", "platform": "PC", "style": "analitik", "tone": "merak uyandırıcı", "duration": 10},
+    {"game": "Hades", "platform": "PC", "style": "hızlı ve eğlenceli", "tone": "enerjik", "duration": 8},
+    {"game": "Rocket League", "platform": "PC", "style": "rekabetçi ve eğlenceli", "tone": "heyecanlı", "duration": 8}
+  ]
+}
