@@ -1,6 +1,14 @@
 import json
 import re
-from typing import Any, Dict
+from typing import Any, Dict, Iterable, List
+
+
+def _normalize_list(value: Any, fallback: Iterable[str] | None = None) -> List[str]:
+    if isinstance(value, list):
+        return [str(item) for item in value]
+    if value is None:
+        return list(fallback or [])
+    return [str(value)]
 
 
 def build_local_plan(
@@ -59,7 +67,29 @@ def _extract_json_payload(text: str) -> Dict[str, Any]:
     if match:
         text = match.group(1)
 
-    return json.loads(text)
+    payload = json.loads(text)
+    if not isinstance(payload, dict):
+        raise ValueError("Model JSON olarak değil, farklı format döndürdü.")
+    return payload
+
+
+def _merge_plan_defaults(plan: Dict[str, Any], *, platform: str, style: str, tone: str, duration_minutes: int) -> Dict[str, Any]:
+    merged = dict(plan or {})
+    merged.setdefault("platform", platform)
+    merged.setdefault("style", style)
+    merged.setdefault("tone", tone)
+    merged.setdefault("duration_minutes", duration_minutes)
+    merged.setdefault("title", f"{platform} platformunda {style} {duration_minutes} dakikalık video")
+    merged.setdefault("hook", "Oyun hakkında güçlü bir açılış hazırlıyoruz.")
+    merged.setdefault("summary", "Bu video için net bir hikâye akışı oluşturuluyor.")
+    merged.setdefault("outline", ["Giriş", "Oynanış", "Değerlendirme"])
+    merged.setdefault("shot_list", ["Açılış", "Oynanış", "Sonuç"])
+    merged.setdefault("cta", "Abone olun ve sonraki videoda devam edelim.")
+    merged.setdefault("seo_tags", [platform, style, "oyun incelemesi"])
+    merged["outline"] = _normalize_list(merged.get("outline"), ["Giriş", "Oynanış", "Değerlendirme"])
+    merged["shot_list"] = _normalize_list(merged.get("shot_list"), ["Açılış", "Oynanış", "Sonuç"])
+    merged["seo_tags"] = _normalize_list(merged.get("seo_tags"), [platform, style, "oyun incelemesi"])
+    return merged
 
 
 def generate_content_plan(
@@ -105,31 +135,24 @@ def generate_content_plan(
         )
         raw_text = getattr(response, "text", None) or str(response)
         payload = _extract_json_payload(raw_text)
-
-        if not isinstance(payload, dict):
-            raise ValueError("Model JSON olarak değil, farklı format döndürdü.")
-
-        payload.setdefault("platform", platform)
-        payload.setdefault("style", style)
-        payload.setdefault("tone", tone)
-        payload.setdefault("duration_minutes", duration_minutes)
-        return payload
+        return _merge_plan_defaults(payload, platform=platform, style=style, tone=tone, duration_minutes=duration_minutes)
     except Exception:
         return plan
 
 
 def render_markdown(plan: Dict[str, Any]) -> str:
-    outline = "\n".join(f"{index}. {item}" for index, item in enumerate(plan.get("outline", []), start=1))
-    shot_list = "\n".join(f"- {item}" for item in plan.get("shot_list", []))
-    seo_tags = ", ".join(plan.get("seo_tags", []))
+    safe_plan = plan or {}
+    outline = "\n".join(f"{index}. {item}" for index, item in enumerate(_normalize_list(safe_plan.get("outline"), ["Giriş", "Oynanış", "Değerlendirme"]), start=1))
+    shot_list = "\n".join(f"- {item}" for item in _normalize_list(safe_plan.get("shot_list"), ["Açılış", "Oynanış", "Sonuç"]))
+    seo_tags = ", ".join(_normalize_list(safe_plan.get("seo_tags"), ["oyun", "inceleme"]))
 
-    return f"""# {plan.get('title', 'Oyun İçerik Planı')}
+    return f"""# {safe_plan.get('title', 'Oyun İçerik Planı')}
 
 ## Açılış cümlesi
-{plan.get('hook', 'Oyun hakkında güçlü bir giriş hazırlıyoruz.')}
+{safe_plan.get('hook', 'Oyun hakkında güçlü bir giriş hazırlıyoruz.')}
 
 ## Özet
-{plan.get('summary', 'Bu video için net bir hikâye akışı oluşturuluyor.')}
+{safe_plan.get('summary', 'Bu video için net bir hikâye akışı oluşturuluyor.')}
 
 ## Video akışı
 {outline}
@@ -138,7 +161,7 @@ def render_markdown(plan: Dict[str, Any]) -> str:
 {shot_list}
 
 ## CTA
-{plan.get('cta', 'Abone olun ve sonraki videoda devam edelim.')}
+{safe_plan.get('cta', 'Abone olun ve sonraki videoda devam edelim.')}
 
 ## SEO etiketleri
 {seo_tags}
@@ -146,3 +169,271 @@ def render_markdown(plan: Dict[str, Any]) -> str:
 
 
 __all__ = ["build_local_plan", "generate_content_plan", "render_markdown"]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
