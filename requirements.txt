@@ -1,3 +1,137 @@
-google-genai
-python-dotenv
-pytest
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+
+from dotenv import load_dotenv
+
+from content_automation import generate_content_plan, render_markdown
+from video_workflow import build_output, generate_workflow_output
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="YouTube oyun kanalı için yapay zeka içerik otomasyonu."
+    )
+    parser.add_argument("--game", required=True, help="Oyun adı, örn. CS2, Zelda, Fortnite")
+    parser.add_argument("--platform", default="PC", help="Platform, örn. PC, PS5, Xbox")
+    parser.add_argument(
+        "--style",
+        default="eğlenceli ve hızlı",
+        help="İçerik tonu / video stili",
+    )
+    parser.add_argument(
+        "--tone",
+        default="heyecanlı",
+        help="Ses tonu, örn. eğlenceli, analitik, merak uyandırıcı",
+    )
+    parser.add_argument(
+        "--duration",
+        type=int,
+        default=8,
+        help="Video süresi (dakika)",
+    )
+    parser.add_argument(
+        "--output",
+        choices=["text", "json"],
+        default="text",
+        help="Çıktı formatı",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["plan", "script", "meta", "all"],
+        default="plan",
+        help="Üretilecek içerik tipi",
+    )
+    parser.add_argument(
+        "--publish",
+        action="store_true",
+        help="Video oluşturup YouTube'a yüklemeyi dener.",
+    )
+    parser.add_argument(
+        "--client-secrets",
+        default=None,
+        help="YouTube upload için client_secret.json yolu.",
+    )
+    parser.add_argument(
+        "--credentials-path",
+        default=None,
+        help="YouTube OAuth için kimlik doğrulama dosyası.",
+    )
+    parser.add_argument(
+        "--privacy-status",
+        choices=["public", "private", "unlisted"],
+        default="private",
+        help="YouTube yayın durumunu belirler.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        default="output/videos",
+        help="Video dosyalarının kaydedileceği klasör.",
+    )
+    return parser.parse_args()
+
+
+def main() -> int:
+    load_dotenv()
+    args = parse_args()
+
+    api_key = os.getenv("GOOGLE_API_KEY")
+
+    if args.publish:
+        try:
+            from video_pipeline import create_and_publish_video
+
+            result = create_and_publish_video(
+                game_name=args.game,
+                platform=args.platform,
+                style=args.style,
+                tone=args.tone,
+                duration_minutes=args.duration,
+                api_key=api_key,
+                client_secrets_path=args.client_secrets,
+                credentials_path=args.credentials_path,
+                privacy_status=args.privacy_status,
+                output_dir=args.output_dir,
+            )
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return 0
+        except Exception as exc:
+            print(f"Yayın işlemi başarısız: {exc}", file=sys.stderr)
+            return 1
+
+    if args.output == "json":
+        workflow = generate_workflow_output(
+            game_name=args.game,
+            platform=args.platform,
+            style=args.style,
+            tone=args.tone,
+            duration_minutes=args.duration,
+            api_key=api_key,
+        )
+        print(json.dumps(workflow, ensure_ascii=False, indent=2))
+        return 0
+
+    output = build_output(
+        mode=args.mode,
+        game=args.game,
+        platform=args.platform,
+        style=args.style,
+        tone=args.tone,
+        duration=args.duration,
+        api_key=api_key,
+    )
+    print(output)
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except KeyboardInterrupt:
+        print("\nİşlem kullanıcı tarafından iptal edildi.", file=sys.stderr)
+        raise SystemExit(130)
+
+

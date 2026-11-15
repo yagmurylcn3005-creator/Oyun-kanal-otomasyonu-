@@ -1,40 +1,52 @@
-# Oyun-kanal-otomasyonu-
-YouTube oyun kanalı için yapay zeka içerik otomasyonu.
+from __future__ import annotations
 
-## Hızlı Başlangıç
+from pathlib import Path
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-# .env dosyasına Google API anahtarınızı ekleyin
-python app.py --game "CS2" --platform "PC" --duration 8
-```
 
-## Özellikler
+def test_build_video_project_uses_workflow_data():
+    from video_pipeline import build_video_project
 
-- Oyun başlığı ve platform bazlı içerik planı üretir
-- Video açılış cümlesi, özet, akış ve CTA hazırlar
-- Google Gemini API key mevcutsa canlı içerik planı denemesi yapar
-- API key yoksa yerel akıllı fallback çalışır
-- Artık video scripti ve YouTube meta bilgileri üretebilir
+    project = build_video_project(
+        game_name="CS2",
+        platform="PC",
+        style="eğlenceli ve hızlı",
+        tone="heyecanlı",
+        duration_minutes=8,
+    )
 
-## Yeni kullanım örnekleri
+    assert "workflow" in project
+    assert project["title"].startswith("CS2")
+    assert project["video_path"].endswith(".mp4")
+    assert len(project["script_lines"]) >= 1
 
-```bash
-python app.py --game "Helldivers 2" --platform "PC" --style "eğlenceli ve hızlı" --tone "heyecanlı" --mode plan
-python app.py --game "Zelda" --platform "Switch" --mode script
-python app.py --game "Elden Ring" --platform "PC" --mode meta --output json
-python app.py --game "Stardew Valley" --platform "PC" --mode all
-```
 
-## Geliştirme aşaması
+def test_build_youtube_upload_body_has_required_sections():
+    from video_pipeline import build_youtube_upload_body
 
-Projede şu alanlar genişletilebilir:
+    body = build_youtube_upload_body(
+        title="CS2 PC İncelemesi",
+        description="Oyun incelemesi",
+        tags=["CS2", "PC", "oyun"]
+    )
 
-- oyun verilerinin otomatik çekilmesi
-- konu başlığı ve thumbnail önerileri
-- video seslendirme scripti üretimi
-- otomatik YouTube açıklaması + hashtag üretimi
-- web arayüzü (Streamlit / Flask)
+    assert "snippet" in body
+    assert "status" in body
+    assert body["snippet"]["title"] == "CS2 PC İncelemesi"
+    assert body["status"]["privacyStatus"] == "private"
+
+
+def test_output_dir_path_is_created_in_project():
+    from video_pipeline import build_video_project
+
+    project = build_video_project(
+        game_name="Zelda",
+        platform="Switch",
+        style="analitik",
+        tone="merak uyandırıcı",
+        duration_minutes=7,
+        output_dir=Path("tmp_test_output"),
+    )
+
+    assert "project_dir" in project
+    assert "video_path" in project
+    assert project["project_dir"].startswith("tmp_test_output") or project["project_dir"].endswith("zelda-switch")
